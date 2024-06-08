@@ -4,7 +4,7 @@ $(document).ready(function () {
   const myChart = new Chart(ctx, {
     type: "line",
     data: {
-      datasets: [{ label: "Temperature",  }],
+      datasets: [{ label: "Humidity",  }],
     },
     options: {
       borderWidth: 3,
