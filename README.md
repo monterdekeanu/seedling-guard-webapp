@@ -2,7 +2,6 @@
 # Display Real time sensor values using Python, Flask and Flask-SocketIO  
 
 ## Writeup
-https://www.donskytech.com/python-flask-websockets/
 
 
 ![Real Time Updates Using Python, Flask and Websockets](https://user-images.githubusercontent.com/69466026/190352777-6abb0c96-8ecb-4e04-b817-ce27dabd66cf.PNG)
@@ -11,7 +10,7 @@ https://www.donskytech.com/python-flask-websockets/
 
 1.  Create virtual environment
 ```
-python -m venv .venv
+python3 -m venv .venv
 ```
 
 2.  Activate the virtual environment
@@ -21,6 +20,6 @@ pip install -r requirements.txt
 ```
 4.  Run the project
 ```
-python sensor_app.py
+python3 sensor_app.py
 ```
 
