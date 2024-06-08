@@ -3,6 +3,9 @@ from flask_socketio import SocketIO
 from random import random
 from threading import Lock
 from datetime import datetime
+import time
+import adafruit_dht
+import board
 
 """
 Background Thread
@@ -24,12 +27,20 @@ def get_current_datetime():
 """
 Generate random sequence of dummy sensor values and send it to our clients
 """
+dht_device = adafruit_dht.DHT11(board.D4)
+
 def background_thread():
     print("Generating random sensor values")
     while True:
-        dummy_sensor_value = round(random() * 100, 3)
-        socketio.emit('updateSensorData', {'value': dummy_sensor_value, "date": get_current_datetime()})
-        socketio.sleep(1)
+        try:
+            humidity = dht_device.humidity
+            dummy_sensor_value = round(random() * 100, 3)
+            print(humidity)
+            socketio.emit('updateSensorData', {'value': humidity, "date": get_current_datetime()})
+            socketio.sleep(1)
+        except RuntimeError as err:
+            print(err.args[0])
+        time.sleep(1.0)
 
 """
 Serve root index file
@@ -46,7 +57,6 @@ def connect():
     global thread
     print('Client connected')
 
-    global thread
     with thread_lock:
         if thread is None:
             thread = socketio.start_background_task(background_thread)
@@ -56,7 +66,8 @@ Decorator for disconnect
 """
 @socketio.on('disconnect')
 def disconnect():
-    print('Client disconnected',  request.sid)
+    print('Client disconnected', request.sid)
 
 if __name__ == '__main__':
     socketio.run(app)
+
