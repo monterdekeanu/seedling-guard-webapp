@@ -27,20 +27,30 @@ def get_current_datetime():
 """
 Generate random sequence of dummy sensor values and send it to our clients
 """
-dht_device = adafruit_dht.DHT11(board.D4)
+# dht_device = adafruit_dht.DHT11(board.D4)
 
 def background_thread():
     print("Generating random sensor values")
     while True:
         try:
-            humidity = dht_device.humidity
-            dummy_sensor_value = round(random() * 100, 3)
-            print(humidity)
-            socketio.emit('updateSensorData', {'value': humidity, "date": get_current_datetime()})
+            # humidity = dht_device.humidity
+            dummy_humidity_value  = round(random() * 100, 3)
+            dummy_temperature_value = round(random() * 30 + 10, 2)
+            
+            print(dummy_humidity_value)
+            print(dummy_temperature_value)
+
+            socketio.emit('updateSensorData', {
+                'temperature': dummy_humidity_value,
+                'humidity': dummy_temperature_value,
+                'date' : get_current_datetime()
+            })
             socketio.sleep(1)
         except RuntimeError as err:
             print(err.args[0])
         time.sleep(1.0)
+
+
 
 """
 Serve root index file
@@ -69,5 +79,5 @@ def disconnect():
     print('Client disconnected', request.sid)
 
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app, port=5000)
 
