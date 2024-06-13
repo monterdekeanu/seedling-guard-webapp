@@ -1,7 +1,13 @@
 $(document).ready(function () {
-  const ctx = document.getElementById("myChart").getContext("2d");
+  const ctx1 = document
+    .getElementById("humidityTemperatureChart")
+    .getContext("2d");
 
-  // const myChart = new Chart(ctx, {
+  const ctx2 = document.getElementById("tdsChart").getContext("2d");
+
+  const ctx3 = document.getElementById("soilMoistureChart").getContext("2d");
+
+  // const myChart1 = new Chart(ctx, {
   //   type: "line",
   //   data: {
   //     datasets: [
@@ -17,53 +23,113 @@ $(document).ready(function () {
   const xValues = [];
   const humidityData = [];
   const temperatureData = [];
+  const tdsData = [];
+  const soilMoistureData = [];
 
-  const myChart = new Chart(ctx, {
+  const myChart1 = new Chart(ctx1, {
     type: "line",
     data: {
       labels: xValues,
-      datasets: [{
-        label: "humidity",
-        data: humidityData,
-        borderColor: "red",
-        fill: false
-      },{
-        label: "temperature",
-        data: temperatureData,
-        borderColor: "green",
-        fill: false
-      }]
+      datasets: [
+        {
+          label: "humidity",
+          data: humidityData,
+          borderColor: "red",
+          fill: false,
+        },
+        {
+          label: "temperature",
+          data: temperatureData,
+          borderColor: "green",
+          fill: false,
+        },
+      ],
     },
     options: {
-      legend: {display: true}
-    }
+      legend: { display: true },
+    },
+  });
+
+  const myChart2 = new Chart(ctx2, {
+    type: "line",
+    data: {
+      labels: xValues,
+      datasets: [
+        {
+          label: "tds",
+          data: tdsData,
+          borderColor: "red",
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      legend: { display: true },
+    },
+  });
+
+  const myChart3 = new Chart(ctx3, {
+    type: "line",
+    data: {
+      labels: xValues,
+      datasets: [
+        {
+          label: "soil moisture data",
+          data: soilMoistureData,
+          borderColor: "red",
+          fill: false,
+        },
+      ],
+    },
+    options: {
+      legend: { display: true },
+    },
   });
 
   // function addData(label, data) {
-  //   myChart.data.labels.push(label);
-  //   myChart.data.datasets.forEach((dataset) => {
+  //   myChart1.data.labels.push(label);
+  //   myChart1.data.datasets.forEach((dataset) => {
   //     dataset.data.push(data);
   //   });
-  //   myChart.update();
+  //   myChart1.update();
   // }
-  
+
   // function removeFirstData() {
-  //   myChart.data.labels.splice(0, 1);
-  //   myChart.data.datasets.forEach((dataset) => {
+  //   myChart1.data.labels.splice(0, 1);
+  //   myChart1.data.datasets.forEach((dataset) => {
   //     dataset.data.shift();
   //   });
   // }
 
-  function addData(label, humidity, temperature) {
-    myChart.data.labels.push(label);
-    myChart.data.datasets[0].data.push(humidity);
-    myChart.data.datasets[1].data.push(temperature);
-    myChart.update();
+  function addData(date, humidity, temperature, tds, soilMoisture) {
+    myChart1.data.labels.push(date);
+    myChart1.data.datasets[0].data.push(humidity);
+    myChart1.data.datasets[1].data.push(temperature);
+
+    myChart2.data.labels.push(date);
+    myChart2.data.datasets[0].data.push(tds);
+
+    myChart3.data.labels.push(date);
+    myChart3.data.datasets[0].data.push(soilMoisture);
+
+    myChart1.update();
+    myChart2.update();
+    myChart3.update();
   }
 
   function removeFirstData() {
-    myChart.data.labels.splice(0, 1);
-    myChart.data.datasets.forEach((dataset) => {
+    myChart1.data.labels.splice(0, 1);
+    myChart1.data.datasets.forEach((dataset) => {
+      dataset.data.shift();
+    });
+
+    myChart2.data.labels.splice(0, 1);
+    myChart2.data.datasets.forEach((dataset) => {
+      dataset.data.shift();
+    });
+
+    myChart3.data.labels.splice(0, 1);
+    myChart3.data.datasets.forEach((dataset) => {
       dataset.data.shift();
     });
   }
@@ -78,18 +144,35 @@ $(document).ready(function () {
   //   console.log("Received sensorData :: " + msg.date + " :: " + msg.humid);
   //   console.log("Received sensorData :: " + msg.date + " :: Humidity: " + msg.humidity + " :: Temperature: " + msg.temperature);
   //   // Show only MAX_DATA_COUNT data
-  //   if (myChart.data.labels.length > MAX_DATA_COUNT) {
+  //   if (myChart1.data.labels.length > MAX_DATA_COUNT) {
   //     removeFirstData();
   //   }
   //   addData(msg.date, msg.values);
   // });
   socket.on("updateSensorData", function (msg) {
     console.log(msg);
-    console.log("Received sensorData :: " + msg.date + " :: Humidity: " + msg.humidity + " :: Temperature: " + msg.temperature);
+    console.log(
+      "Received sensorData :: " +
+        msg.date +
+        " :: Humidity: " +
+        msg.humidity +
+        " :: Temperature: " +
+        msg.temperature +
+        " :: TDS: " +
+        msg.tds +
+        " :: Soil Moisture: " +
+        msg.soilMoisture
+    );
     // Show only MAX_DATA_COUNT data
-    if (myChart.data.labels.length > MAX_DATA_COUNT) {
+    if (myChart1.data.labels.length > MAX_DATA_COUNT) {
       removeFirstData();
     }
-    addData(msg.date, msg.humidity, msg.temperature);
+    addData(
+      msg.date,
+      msg.humidity,
+      msg.temperature,
+      msg.tds,
+      msg.soil_moisture
+    );
   });
 });

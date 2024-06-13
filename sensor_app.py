@@ -36,13 +36,19 @@ def background_thread():
             # humidity = dht_device.humidity
             dummy_humidity_value  = round(random() * 100, 3)
             dummy_temperature_value = round(random() * 30 + 10, 2)
-            
+            dummy_tds_value = round(random() * 500, 2)
+            dummy_soil_moisture_value = round(random() * 100, 2)
+
             print(dummy_humidity_value)
             print(dummy_temperature_value)
+            print(dummy_tds_value)
+            print(dummy_soil_moisture_value)
 
             socketio.emit('updateSensorData', {
                 'temperature': dummy_humidity_value,
-                'humidity': dummy_temperature_value,
+                'humidity': dummy_temperature_value ,
+                'tds' : dummy_tds_value,
+                'soil_moisture' : dummy_soil_moisture_value,
                 'date' : get_current_datetime()
             })
             socketio.sleep(1)
