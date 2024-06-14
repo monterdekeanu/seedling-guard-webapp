@@ -1,11 +1,9 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
-from random import random
+from random import uniform
 from threading import Lock
 from datetime import datetime
 import time
-import adafruit_dht
-import board
 
 """
 Background Thread
@@ -27,20 +25,16 @@ def get_current_datetime():
 """
 Generate random sequence of dummy sensor values and send it to our clients
 """
-dht_device = adafruit_dht.DHT11(board.D4)
-
 def background_thread():
     print("Generating random sensor values")
     while True:
-        try:
-            humidity = dht_device.humidity
-            dummy_sensor_value = round(random() * 100, 3)
-            print(humidity)
-            socketio.emit('updateSensorData', {'value': humidity, "date": get_current_datetime()})
-            socketio.sleep(1)
-        except RuntimeError as err:
-            print(err.args[0])
-        time.sleep(1.0)
+        humidity = round(uniform(30, 90), 2)  # Simulating humidity values between 30% and 90%
+        temperature = round(uniform(15, 35), 2)  # Simulating temperature values between 15°C and 35°C
+        salinity = round(uniform(50, 800), 2)  # Simulating TDS Meter values for salinity
+        soil_moisture = round(uniform(0, 10), 2)  # Simulating soil moisture values
+
+        socketio.emit('updateSensorData', {'values': {'humidity': humidity, 'temperature': temperature, 'salinity': salinity, 'moisture': soil_moisture}, "date": get_current_datetime()})
+        socketio.sleep(1)
 
 """
 Serve root index file
@@ -69,5 +63,4 @@ def disconnect():
     print('Client disconnected', request.sid)
 
 if __name__ == '__main__':
-    socketio.run(app)
-
+    socketio.run(app, host='0.0.0.0', port=5000)

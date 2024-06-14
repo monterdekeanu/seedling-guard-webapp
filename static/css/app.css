@@ -1,4 +1,4 @@
-.hero {
+\.hero {
     background: #eee;
     padding: 20px;
     border-radius: 10px;
@@ -13,6 +13,15 @@
 
 
 .chart-container {
-	max-width: 800px;
+	display: flex;
+	flex-wrap: wrap;
+	max-width: 90vw;
 	margin: 0 auto;
+}
+
+.sensor-chart {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 400px;
 }
