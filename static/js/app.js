@@ -32,7 +32,7 @@ $(document).ready(function () {
     options: {
       animation: {
         duration: 1000,
-        easing: 'easeInOutQuad',
+        easing: 'linear',
       }
     }
   });
@@ -54,7 +54,7 @@ $(document).ready(function () {
     options: {
       animation: {
         duration: 1000,
-        easing: 'easeInOutQuad',
+        easing: 'linear',
       }
     }
   });
@@ -76,7 +76,7 @@ $(document).ready(function () {
     options: {
       animation: {
         duration: 1000,
-        easing: 'easeInOutQuad',
+        easing: 'linear',
       }
     }
   });
