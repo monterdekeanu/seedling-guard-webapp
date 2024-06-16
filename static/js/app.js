@@ -113,7 +113,7 @@ $(document).ready(function () {
     }
 
     addData(DHT11Chart, msg.date, [msg.values.humidity, msg.values.temperature]);
-    if(msg.values.temperature > 30){
+    if(msg.values.temperature > 22){
       txtDHT11Status.innerText = "Close Blinds"
       txtDHT11Status.style.color = "red";
     }else{

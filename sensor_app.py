@@ -27,7 +27,7 @@ IN1_PIN = 24
 IN2_PIN = 23
 EN1_PIN = 25
 PUMP_DURATION = 5  # Duration to run the pump in seconds
-PUMP_INTERVAL = 300  # Interval to wait before pumping again in seconds
+PUMP_INTERVAL = 10  # Interval to wait before pumping again in seconds
 
 # Global variables to store sensor data
 humidity = 0
@@ -82,12 +82,21 @@ def read_live_sensor_values():
         temperature_c = dht_device.temperature
         humidity = dht_device.humidity
         
-        if temperature_c > 30 and not is_forward:
+        # if not is_forward:
+            # motor.forward(50)
+            # is_forward = True
+            # time.sleep(2)
+        # else:
+            # motor.backward()
+            # is_forward = False
+            # time.sleep(2)
+            
+        if temperature_c > 22 and not is_forward:
             motor.forward(50)
             is_forward = True
             time.sleep(2)
             motor.stop()
-        elif temperature_c < 30 and is_forward:
+        elif temperature_c < 22 and is_forward:
             motor.backward(50)
             is_forward = False
             time.sleep(2)   
@@ -96,7 +105,7 @@ def read_live_sensor_values():
         # Check if TDS is outside acceptable range to trigger the relay
         current_time = time.time()
         if tds < 300 or tds > 800:
-            print(current_time - last_pump_time)
+            print(f"{current_time - last_pump_time} seconds has passed.")
             if current_time - last_pump_time > PUMP_INTERVAL:
                 print("Activating fertilizer pump due to TDS level")
                 GPIO.output(RELAY_1_PIN, GPIO.LOW)  # Turn on the pump
