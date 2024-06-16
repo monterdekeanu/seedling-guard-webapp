@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Real Time Sensor Display Using Python, Flask, Flask-SocketIO</title>
-    
+    <title>Seedling Guard</title>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.1/chart.min.js"></script>
-    <link
-      href="//mincss.com/entireframework.min.css"
-      rel="stylesheet"
-      type="text/css"
-    />
-    <link href="{{url_for('static', filename = 'css/app.css')}}" rel="stylesheet">
-  </head>
-  <body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.0"></script>
+
+    <link href="//mincss.com/entireframework.min.css" rel="stylesheet" type="text/css"/>
+    <link href="{{ url_for('static', filename = 'css/app.css') }}" rel="stylesheet">
+</head>
+<body>
     <script type="text/javascript" src="{{ url_for('static', filename = 'js/app.js') }}"></script>
 
     <nav class="nav" tabindex="-1" onclick="this.focus()">
@@ -28,9 +27,47 @@
       <div class="hero">
         <h1>Real Time Sensor Display</h1>
         <div class="chart-container">
-          <canvas id="myChart" width="1000" height="600"></canvas>
+            <div class="sensor-chart">
+                <div>
+                  <h2>DHT11 Sensor</h2>
+                  <h2 id="txtDHT11Status">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Humidity: </h3>
+                      <h3 id="txtHumidity">xx</h3>
+                  </div>
+                  <div class="sensor-reading">
+                      <h3>Temperature: </h3>
+                      <h3 id="txtTemperature">xx</h3>
+                  </div>
+                </div>
+                <canvas id="DHT11Chart" width="300" height="200"></canvas>
+            </div>
+            <div class="sensor-chart">
+                <div>
+                  <h2>TDS Sensor</h2>
+                  <h2 id="txtTDSStatus">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Water Salinity: </h3>
+                      <h3 id="txtWaterSalinity">xx</h3>
+                  </div>
+                </div>
+                <canvas id="TDSMeterChart" width="300" height="200"></canvas>
+            </div>
+            <div class="sensor-chart">
+                <div>
+                  <h2>Soil Moisture Sensor</h2>
+                  <h2 id="txtSoilMoistureStatus">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Soil Moisture: </h3>
+                      <h3 id="txtSoilMoisture">xx</h3>
+                  </div>
+                </div>
+                <canvas id="SoilMoistureChart" width="300" height="200"></canvas>
+            </div>
+
+
         </div>
       </div>
     </div>
-  </body>
+</body>
 </html>
