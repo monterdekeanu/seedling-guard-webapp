@@ -1,43 +1,54 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template
 from flask_socketio import SocketIO
-from random import uniform
 from threading import Lock
 from datetime import datetime
-
-from ads1115 import ADSConverter
-from motor import Motor
-
-import adafruit_dht
+from random import uniform
 import time
 import os
 import RPi.GPIO as GPIO
-
+import adafruit_dht
 import board
 import busio
-
+from ads1115 import ADSConverter
+from motor import Motor
 
 """
 Background Thread
 """
+
 mode = None
+thread = None
+thread_lock = Lock()
+
+# Constants and Global Variables
+RELAY_1_PIN = 26
+RELAY_2_PIN = 19
+IN1_PIN = 24
+IN2_PIN = 23
+EN1_PIN = 25
+PUMP_DURATION = 5  # Duration to run the pump in seconds
+PUMP_INTERVAL = 300  # Interval to wait before pumping again in seconds
+
+# Global variables to store sensor data
 humidity = 0
 temperature_c = 0
 tds = 0
 soil_moisture = 0
+is_forward = False
+last_pump_time = 0
+countdown_time = 0
 
-"""
-relay pin
-"""
-relay1Pin = 26
-relay2Pin = 19
+# GPIO Setup
 GPIO.setmode(GPIO.BCM)
-GPIO.setup(relay1Pin, GPIO.OUT)
-GPIO.setup(relay2Pin, GPIO.OUT)
+GPIO.setup(RELAY_1_PIN, GPIO.OUT)
+GPIO.setup(RELAY_2_PIN, GPIO.OUT)
 
+# Sensors and Motor
+dht_device = adafruit_dht.DHT11(board.D17)
+ads_sensor = ADSConverter()
+motor = Motor(IN1_PIN, IN2_PIN, EN1_PIN)
 
-thread = None
-thread_lock = Lock()
-
+#Flask App and SocketIO
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'seedlingGuard!'
 socketio = SocketIO(app, cors_allowed_origins='*')
@@ -50,69 +61,100 @@ def get_current_datetime():
     #return now.strftime("%m/%d/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
 
-dht_device = adafruit_dht.DHT11(board.D17)
-ads_sensor = ADSConverter()
+# This function modifies global variables, so we use the `global` keyword to refer to them.
+def generate_random_sensor_values():
+    global humidity, temperature_c, tds, soil_moisture
+    print("Generating random sensor values")
+    humidity = round(uniform(30, 90), 2) # Simulating humidity values between 30% and 90%
+    temperature_c = round(uniform(15, 35), 2) # Simulating temperature values between 15°C and 35°C
+    tds = round(uniform(50, 800), 2) # Simulating TDS Meter values for salinity
+    soil_moisture = round(uniform(0, 10), 2) # Simulating soil moisture values
 
-in1 = 24
-in2 = 23
-en1 = 25
-motor = Motor(in1,in2,en1)
+# This function modifies global variables, so we use the `global` keyword to refer to them.
+def read_live_sensor_values():
+    global humidity, temperature_c, tds, soil_moisture, is_forward, last_pump_time
+    print("Generating live sensor values")
+    tds = ads_sensor.read_salinity()
+    soil_moisture = ads_sensor.read_moisture()
+    if tds < 0.00:
+        tds = 0
+    try:
+        temperature_c = dht_device.temperature
+        humidity = dht_device.humidity
+        
+        if temperature_c > 30 and not is_forward:
+            motor.forward(50)
+            is_forward = True
+            time.sleep(2)
+            motor.stop()
+        elif temperature_c < 30 and is_forward:
+            motor.backward(50)
+            is_forward = False
+            time.sleep(2)   
+            motor.stop()
+            
+        # Check if TDS is outside acceptable range to trigger the relay
+        current_time = time.time()
+        if tds < 300 or tds > 800:
+            print(current_time - last_pump_time)
+            if current_time - last_pump_time > PUMP_INTERVAL:
+                print("Activating fertilizer pump due to TDS level")
+                GPIO.output(RELAY_1_PIN, GPIO.LOW)  # Turn on the pump
+                time.sleep(PUMP_DURATION)
+                GPIO.output(RELAY_1_PIN, GPIO.HIGH)  # Turn off the pump
+                last_pump_time = current_time
+                print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
+                
+        else: 
+            GPIO.output(RELAY_1_PIN, GPIO.HIGH)
+        
+        # Check if soil moisture is below a threshold to trigger the relay
+        if soil_moisture < 5:
+            GPIO.output(RELAY_2_PIN, GPIO.LOW)
+        # Check if relay is triggered and soil moisture becomes moist again
+        else:
+            GPIO.output(RELAY_2_PIN, GPIO.HIGH)
+    except RuntimeError as err:
+        print(err.args[0])
+
+def format_elapsed_time(seconds):
+    minutes = seconds // 60
+    seconds = seconds % 60
+    return f"{int(minutes):02}:{int(seconds):02}"
 
 def background_thread():
-    global humidity, temperature_c, tds, soil_moisture, is_forward, relay1_triggered
-    is_forward = False
-    relay1_triggered = False
+    global is_forward, last_pump_time, countdown_time
     while True:
         if mode == '2':
-            print("Generating random sensor values")
-            humidity = round(uniform(30, 90), 2)  # Simulating humidity values between 30% and 90%
-            temperature_c = round(uniform(15, 35), 2)  # Simulating temperature values between 15°C and 35°C
-            tds = round(uniform(50, 800), 2)  # Simulating TDS Meter values for salinity
-            soil_moisture = round(uniform(0, 10), 2)  # Simulating soil moisture values
+            generate_random_sensor_values()
         elif mode == '1':
-            print("Generating live sensor values")
-            tds = ads_sensor.read_salinity()
-            soil_moisture = ads_sensor.read_moisture()
-            
-            if tds < 0.00:
-                tds = 0
-            try:
-                temperature_c = dht_device.temperature
-                humidity = dht_device.humidity
-                
-                if temperature_c > 30 and not is_forward:
-                    motor.forward(50)
-                    is_forward = True
-                    time.sleep(2)
-                    motor.stop()
-                elif temperature_c < 30 and is_forward:
-                    motor.backward(50)
-                    is_forward = False
-                    time.sleep(2)   
-                    motor.stop()
-    
-                    
-                if tds < 300 or tds > 800:
-                    GPIO.output(relay1Pin, GPIO.LOW)
-                else: 
-                    GPIO.output(relay1Pin, GPIO.HIGH)
-                
-                # Check if soil moisture is below a threshold to trigger the relay
-                if soil_moisture < 5:
-                    GPIO.output(relay2Pin, GPIO.LOW)
-                # Check if relay is triggered and soil moisture becomes moist again
-                else:
-                    GPIO.output(relay2Pin, GPIO.HIGH)
-            except RuntimeError as err:
-                print(err.args[0])
-        humidity = round(humidity,2)
-        temperature_c = round(temperature_c,2)
-        tds = round(tds,2)
-        soil_moisture = round(soil_moisture,2)
-        socketio.emit('updateSensorData', {'values': {'humidity': humidity, 'temperature': temperature_c, 'salinity': tds, 'moisture': soil_moisture}, "date": get_current_datetime()})
+            read_live_sensor_values()
+        
+        elapsed_time = time.time() - last_pump_time
+        formatted_time = format_elapsed_time(elapsed_time)
+        
+        if countdown_time > 0:
+            countdown_time -= 1
+        formatted_countdown = format_elapsed_time(countdown_time)
+        
+        socketio.emit('updateSensorData', {
+            'values': {
+                'humidity': round(humidity, 2),
+                'temperature': round(temperature_c, 2),
+                'salinity': round(tds, 2),
+                'moisture': round(soil_moisture, 2)
+            },
+            "date": get_current_datetime()
+        })
         socketio.sleep(1)
 
-
+def cleanup():
+    print("Cleaning up GPIOs and motors...")
+    GPIO.output(RELAY_1_PIN, GPIO.HIGH)  # Turn off relay 1
+    GPIO.output(RELAY_2_PIN, GPIO.HIGH)  # Turn off relay 2
+    motor.stop()  # Stop the motor
+    GPIO.cleanup()  # Cleanup GPIO pins
+    
 """
 Serve root index file
 """
@@ -171,9 +213,4 @@ if __name__ == '__main__':
 
         socketio.run(app, host='0.0.0.0', port=5000)
     finally:
-        # Cleanup code
-        print("Cleaning up GPIOs and motors...")
-        GPIO.output(relay1Pin, GPIO.HIGH)  # Turn off relay 1
-        GPIO.output(relay2Pin, GPIO.HIGH)  # Turn off relay 2
-        motor.stop()  # Stop the motor
-        GPIO.cleanup()  # Cleanup GPIO pins
+        cleanup()
