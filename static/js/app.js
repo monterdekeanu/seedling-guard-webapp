@@ -1,7 +1,6 @@
 $(document).ready(function () {
   // DHT11 Chart for Humidity and Temperature
   const ctxDHT11 = document.getElementById("DHT11Chart").getContext("2d");
-  const txtHumidity = document.getElementById("txtHumidity");
   const txtTemperature = document.getElementById("txtTemperature");
   const txtWaterSalinity = document.getElementById("txtWaterSalinity");
   const txtSoilMoisture = document.getElementById("txtSoilMoisture");
@@ -13,13 +12,6 @@ $(document).ready(function () {
     data: {
       labels: [],
       datasets: [
-        {
-          label: "Humidity",
-          borderColor: 'rgba(75, 192, 192, 1)',
-          backgroundColor: 'rgba(75, 192, 192, 0.2)',
-          data: [],
-          fill: false,
-        },
         {
           label: "Temperature",
           borderColor: 'rgba(255, 99, 132, 1)',
@@ -112,8 +104,8 @@ $(document).ready(function () {
       removeFirstData(SoilMoistureChart);
     }
 
-    addData(DHT11Chart, msg.date, [msg.values.humidity, msg.values.temperature]);
-    if(msg.values.temperature > 22){
+    addData(DHT11Chart, msg.date, [ msg.values.temperature]);
+    if(msg.values.temperature > 30){
       txtDHT11Status.innerText = "Close Blinds"
       txtDHT11Status.style.color = "red";
     }else{
@@ -140,11 +132,10 @@ $(document).ready(function () {
         txtSoilMoistureStatus.innerText = "Wet";
         txtSoilMoistureStatus.style.color = "green";
     }
-    txtHumidity.innerText = msg.values.humidity + "%";
     txtTemperature.innerText = msg.values.temperature + " °C";
     addData(TDSMeterChart, msg.date, [msg.values.salinity]);
     txtWaterSalinity.innerText = msg.values.salinity + " ppm";
     addData(SoilMoistureChart, msg.date, [msg.values.moisture]);
-    txtSoilMoisture.innerText = msg.values.moisture + " %";
+    txtSoilMoisture.innerText = msg.values.moisture + "mL";
   });
 });

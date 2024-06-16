@@ -24,7 +24,7 @@ class ADSConverter:
             voltage = self.V_wet
 
         moisture = 100 * (self.V_dry - voltage) / (self.V_dry - self.V_wet)
-        return moisture
+        return moisture / 10
 
     def read_moisture(self):
         voltage = self.soil_moisture_sensor.voltage

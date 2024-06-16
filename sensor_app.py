@@ -75,6 +75,7 @@ def read_live_sensor_values():
     global humidity, temperature_c, tds, soil_moisture, is_forward, last_pump_time
     print("Generating live sensor values")
     tds = ads_sensor.read_salinity()
+    print(tds)
     soil_moisture = ads_sensor.read_moisture()
     if tds < 0.00:
         tds = 0
@@ -91,38 +92,38 @@ def read_live_sensor_values():
             # is_forward = False
             # time.sleep(2)
             
-        if temperature_c > 22 and not is_forward:
-            motor.forward(50)
-            is_forward = True
-            time.sleep(2)
-            motor.stop()
-        elif temperature_c < 22 and is_forward:
-            motor.backward(50)
-            is_forward = False
-            time.sleep(2)   
-            motor.stop()
+        # if temperature_c > 22 and not is_forward:
+            # motor.forward(50)
+            # is_forward = True
+            # time.sleep(2)
+            # motor.stop()
+        # elif temperature_c < 22 and is_forward:
+            # motor.backward(50)
+            # is_forward = False
+            # time.sleep(2)   
+            # motor.stop()
             
         # Check if TDS is outside acceptable range to trigger the relay
-        current_time = time.time()
-        if tds < 300 or tds > 800:
-            print(f"{current_time - last_pump_time} seconds has passed.")
-            if current_time - last_pump_time > PUMP_INTERVAL:
-                print("Activating fertilizer pump due to TDS level")
-                GPIO.output(RELAY_1_PIN, GPIO.LOW)  # Turn on the pump
-                time.sleep(PUMP_DURATION)
-                GPIO.output(RELAY_1_PIN, GPIO.HIGH)  # Turn off the pump
-                last_pump_time = current_time
-                print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
+        # current_time = time.time()
+        # if tds < 300 or tds > 800:
+            # print(f"{current_time - last_pump_time} seconds has passed.")
+            # if current_time - last_pump_time > PUMP_INTERVAL:
+                # print("Activating fertilizer pump due to TDS level")
+                # GPIO.output(RELAY_1_PIN, GPIO.LOW)  # Turn on the pump
+                # time.sleep(PUMP_DURATION)
+                # GPIO.output(RELAY_1_PIN, GPIO.HIGH)  # Turn off the pump
+                # last_pump_time = current_time
+                # print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
                 
-        else: 
-            GPIO.output(RELAY_1_PIN, GPIO.HIGH)
+        # else: 
+            # GPIO.output(RELAY_1_PIN, GPIO.HIGH)
         
-        # Check if soil moisture is below a threshold to trigger the relay
-        if soil_moisture < 5:
-            GPIO.output(RELAY_2_PIN, GPIO.LOW)
-        # Check if relay is triggered and soil moisture becomes moist again
-        else:
-            GPIO.output(RELAY_2_PIN, GPIO.HIGH)
+        # # Check if soil moisture is below a threshold to trigger the relay
+        # if soil_moisture < 5:
+            # GPIO.output(RELAY_2_PIN, GPIO.LOW)
+        # # Check if relay is triggered and soil moisture becomes moist again
+        # else:
+            # GPIO.output(RELAY_2_PIN, GPIO.HIGH)
     except RuntimeError as err:
         print(err.args[0])
 
@@ -139,16 +140,15 @@ def background_thread():
         elif mode == '1':
             read_live_sensor_values()
         
-        elapsed_time = time.time() - last_pump_time
-        formatted_time = format_elapsed_time(elapsed_time)
+        # elapsed_time = time.time() - last_pump_time
+        # formatted_time = format_elapsed_time(elapsed_time)
         
-        if countdown_time > 0:
-            countdown_time -= 1
-        formatted_countdown = format_elapsed_time(countdown_time)
+        # if countdown_time > 0:
+            # countdown_time -= 1
+        # formatted_countdown = format_elapsed_time(countdown_time)
         
         socketio.emit('updateSensorData', {
             'values': {
-                'humidity': round(humidity, 2),
                 'temperature': round(temperature_c, 2),
                 'salinity': round(tds, 2),
                 'moisture': round(soil_moisture, 2)

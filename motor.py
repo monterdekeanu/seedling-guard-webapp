@@ -31,32 +31,3 @@ class Motor:
 	def cleanup():
 		self.pwm.stop()
 		GPIO.cleanup()
-		
-# def main():
-    # in1 = 24
-    # in2 = 23
-    # en1 = 25
-    
-    # motor = Motor(in1, in2, en1)
-    # try:
-        # while True:
-            # print("Motor forward")
-            # motor.forward(50)  # 50% speed
-            # sleep(2)
-            
-            # print("Motor backward")
-            # motor.backward(50)  # 50% speed
-            # sleep(2)
-            
-            # print("Motor stop")
-            # motor.stop()
-            # sleep(1)
-            
-    # except KeyboardInterrupt:
-        # print("Interrupted by user")
-    # finally:
-        # motor.cleanup()
-        # print("GPIO cleanup completed")
-
-# if __name__ == "__main__":
-    # main()
