@@ -5,10 +5,8 @@ from datetime import datetime
 from random import uniform
 import time
 import os
-import RPi.GPIO as GPIO
 import adafruit_dht
 import board
-import busio
 from ads1115 import ADSConverter
 from motor import Motor
 from relay import Relay
@@ -22,22 +20,41 @@ thread = None
 thread_lock = Lock()
 
 # Constants and Global Variables
-RELAY_1_PIN = 26
-RELAY_2_PIN = 19
-IN1_PIN = 24
-IN2_PIN = 23
-EN1_PIN = 25
+RELAY_1_PIN = 8
+RELAY_2_PIN = 7
+
+IN1_PIN = 15
+IN2_PIN = 18
+EN1_PIN = 14
+
+IN3_PIN = 23
+IN4_PIN = 24
+EN2_PIN = 25
+MOTOR_SPEED = 15
+
 PUMP_DURATION = 5  # Duration to run the pump in seconds
 PUMP_INTERVAL = 10  # Interval to wait before pumping again in seconds
 
+TEMP_TRIGGER = 30
+CONSECUTIVE_READINGS_THRESHOLD = 3  # Number of consecutive readings required to trigger motors
+
 # Global variables to store sensor data
-humidity = 0
 temperature_c = 0
 tds = 0
 soil_moisture = 0
 is_forward = False
 last_pump_time = 0
 countdown_time = 0
+toggle_temp_flag = True  # Flag to alternate temperature
+consecutive_readings = 0
+
+# Sensors and Motor
+dht_device = adafruit_dht.DHT11(board.D4)
+ads_sensor = ADSConverter()
+motor1 = Motor(IN1_PIN, IN2_PIN, EN1_PIN)
+motor2 = Motor(IN3_PIN, IN4_PIN, EN2_PIN)
+relay1 = Relay(RELAY_1_PIN)
+relay2 = Relay(RELAY_2_PIN)
 
 #Flask App and SocketIO
 app = Flask(__name__)
@@ -54,72 +71,89 @@ def get_current_datetime():
 
 # This function modifies global variables, so we use the `global` keyword to refer to them.
 def generate_random_sensor_values():
-    global humidity, temperature_c, tds, soil_moisture
+    global temperature_c, tds, soil_moisture
     print("Generating random sensor values")
-    humidity = round(uniform(30, 90), 2) # Simulating humidity values between 30% and 90%
     temperature_c = round(uniform(15, 35), 2) # Simulating temperature values between 15°C and 35°C
     tds = round(uniform(50, 800), 2) # Simulating TDS Meter values for salinity
     soil_moisture = round(uniform(0, 10), 2) # Simulating soil moisture values
 
 # This function modifies global variables, so we use the `global` keyword to refer to them.
 def read_live_sensor_values():
-    # Sensors and Motor
-    dht_device = adafruit_dht.DHT11(board.D17)
-    ads_sensor = ADSConverter()
-    motor = Motor(IN1_PIN, IN2_PIN, EN1_PIN)
-    relay1 = Relay(RELAY_1_PIN)
-    relay2 = Relay(RELAY_2_PIN)
-    global humidity, temperature_c, tds, soil_moisture, is_forward, last_pump_time
+    global temperature_c, tds, soil_moisture, is_forward, last_pump_time, toggle_temp_flag, consecutive_readings
     print("Generating live sensor values")
+    
     tds = ads_sensor.read_salinity()
     soil_moisture = ads_sensor.read_moisture()
-    if tds < 0.00:
-        tds = 0
+    tds = max(0 , tds)
     try:
-        temperature_c = dht_device.temperature
-        humidity = dht_device.humidity
+        #temperature_c = dht_device.temperature
+        # Alternate temperature between 31°C and 29°C for testing motor control
         
-        # if not is_forward:
-            # motor.forward(50)
-            # is_forward = True
-            # time.sleep(2)
-        # else:
-            # motor.backward()
-            # is_forward = False
-            # time.sleep(2)
-            
-        # if temperature_c > 22 and not is_forward:
-            # motor.forward(50)
-            # is_forward = True
-            # time.sleep(2)
-            # motor.stop()
-        # elif temperature_c < 22 and is_forward:
-            # motor.backward(50)
-            # is_forward = False
-            # time.sleep(2)   
-            # motor.stop()
+        if is_forward and consecutive_readings == 0:
+            toggle_temp_flag = not toggle_temp_flag
+        elif not is_forward and consecutive_readings == 0:
+            toggle_temp_flag = not toggle_temp_flag
+        if toggle_temp_flag:
+            temperature_c = 31
+        else:
+            temperature_c = 29
+        print(f"Temperature set to: {temperature_c}")
+        print(f"Toggle temp flag after setting temperature: {toggle_temp_flag}")
+        
+        if temperature_c > TEMP_TRIGGER:
+            if is_forward:
+                consecutive_readings = 0  # Reset counter if already in forward state
+            else:
+                consecutive_readings += 1
+        else:
+            if not is_forward:
+                consecutive_readings = 0  # Reset counter if already in backward state
+            else:
+                consecutive_readings += 1
+    
+        print(f"Consecutive readings: {consecutive_readings}")
+        if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
+            if temperature_c > TEMP_TRIGGER and not is_forward:
+                motor1.forward(MOTOR_SPEED)
+                motor2.forward(MOTOR_SPEED)
+                print("motor forward")
+                is_forward = True
+                time.sleep(2)
+                motor1.stop()
+                motor2.stop()
+                consecutive_readings = 0  # Reset counter after action
+            elif temperature_c < TEMP_TRIGGER and is_forward:
+                motor1.backward(MOTOR_SPEED)
+                motor2.backward(MOTOR_SPEED)
+                is_forward = False
+                print("motor backward")
+                time.sleep(2)
+                motor1.stop()
+                motor2.stop()
+                consecutive_readings = 0  # Reset counter after action
+        
             
         # Check if TDS is outside acceptable range to trigger the relay
-        # current_time = time.time()
-        # if tds < 300 or tds > 800:
-            # print(f"{current_time - last_pump_time} seconds has passed.")
-            # if current_time - last_pump_time > PUMP_INTERVAL:
-                # print("Activating fertilizer pump due to TDS level")
-                # relay1.activate() # Turn on the pump
-                # time.sleep(PUMP_DURATION)
-                # relay1.deactivate()  # Turn off the pump
-                # last_pump_time = current_time
-                # print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
+        current_time = time.time()
+        if tds < 300 or tds > 800:
+            print(f"{current_time - last_pump_time} seconds has passed.")
+            if current_time - last_pump_time > PUMP_INTERVAL:
+                print("Activating fertilizer pump due to TDS level")
+                relay1.activate() # Turn on the pump
+                time.sleep(PUMP_DURATION)
+                relay1.deactivate()  # Turn off the pump
+                last_pump_time = current_time
+                print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
                 
-        # else: 
-            # relay1.deactivate()
+        else: 
+            relay1.deactivate()
         
-        # # Check if soil moisture is below a threshold to trigger the relay
-        # if soil_moisture < 5:
-            # relay2.activate()
-        # # Check if relay is triggered and soil moisture becomes moist again
-        # else:
-            # relay2.deactivate()
+        # Check if soil moisture is below a threshold to trigger the relay
+        if soil_moisture < 5:
+            relay2.activate()
+        # Check if relay is triggered and soil moisture becomes moist again
+        else:
+            relay2.deactivate()
     except RuntimeError as err:
         print(err.args[0])
 
@@ -136,12 +170,12 @@ def background_thread():
         elif mode == '1':
             read_live_sensor_values()
         
-        # elapsed_time = time.time() - last_pump_time
-        # formatted_time = format_elapsed_time(elapsed_time)
+        elapsed_time = time.time() - last_pump_time
+        formatted_time = format_elapsed_time(elapsed_time)
         
-        # if countdown_time > 0:
-            # countdown_time -= 1
-        # formatted_countdown = format_elapsed_time(countdown_time)
+        if countdown_time > 0:
+            countdown_time -= 1
+        formatted_countdown = format_elapsed_time(countdown_time)
         
         socketio.emit('updateSensorData', {
             'values': {
@@ -157,7 +191,8 @@ def cleanup():
     print("Cleaning up GPIOs and motors...")
     relay1.cleanup()
     relay2.cleanup()
-    motor.stop()  # Stop the motor
+    motor1.stop()  # Stop the motor
+    motor2.stop()  # Stop the motor
     GPIO.cleanup()  # Cleanup GPIO pins
     
 """
