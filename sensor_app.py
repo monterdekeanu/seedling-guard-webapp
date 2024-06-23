@@ -30,13 +30,13 @@ EN1_PIN = 14
 IN3_PIN = 23
 IN4_PIN = 24
 EN2_PIN = 25
-MOTOR_SPEED = 15
+MOTOR_SPEED = 17
 
 PUMP_DURATION = 5  # Duration to run the pump in seconds
 PUMP_INTERVAL = 10  # Interval to wait before pumping again in seconds
 
 TEMP_TRIGGER = 30
-CONSECUTIVE_READINGS_THRESHOLD = 3  # Number of consecutive readings required to trigger motors
+CONSECUTIVE_READINGS_THRESHOLD = 5  # Number of consecutive readings required to trigger motors
 
 # Global variables to store sensor data
 temperature_c = 0
@@ -86,19 +86,19 @@ def read_live_sensor_values():
     soil_moisture = ads_sensor.read_moisture()
     tds = max(0 , tds)
     try:
-        #temperature_c = dht_device.temperature
+        temperature_c = dht_device.temperature
         # Alternate temperature between 31°C and 29°C for testing motor control
         
-        if is_forward and consecutive_readings == 0:
-            toggle_temp_flag = not toggle_temp_flag
-        elif not is_forward and consecutive_readings == 0:
-            toggle_temp_flag = not toggle_temp_flag
-        if toggle_temp_flag:
-            temperature_c = 31
-        else:
-            temperature_c = 29
-        print(f"Temperature set to: {temperature_c}")
-        print(f"Toggle temp flag after setting temperature: {toggle_temp_flag}")
+        # if is_forward and consecutive_readings == 0:
+            # toggle_temp_flag = not toggle_temp_flag
+        # elif not is_forward and consecutive_readings == 0:
+            # toggle_temp_flag = not toggle_temp_flag
+        # if toggle_temp_flag:
+            # temperature_c = 31
+        # else:
+            # temperature_c = 29
+        # print(f"Temperature set to: {temperature_c}")
+        # print(f"Toggle temp flag after setting temperature: {toggle_temp_flag}")
         
         if temperature_c > TEMP_TRIGGER:
             if is_forward:
