@@ -27,9 +27,6 @@ IN1_PIN = 15
 IN2_PIN = 18
 EN1_PIN = 14
 
-IN3_PIN = 23
-IN4_PIN = 24
-EN2_PIN = 25
 MOTOR_SPEED = 17
 
 PUMP_DURATION = 5  # Duration to run the pump in seconds
@@ -52,7 +49,6 @@ consecutive_readings = 0
 dht_device = adafruit_dht.DHT11(board.D4)
 ads_sensor = ADSConverter()
 motor1 = Motor(IN1_PIN, IN2_PIN, EN1_PIN)
-motor2 = Motor(IN3_PIN, IN4_PIN, EN2_PIN)
 relay1 = Relay(RELAY_1_PIN)
 relay2 = Relay(RELAY_2_PIN)
 
@@ -86,6 +82,7 @@ def read_live_sensor_values():
     soil_moisture = ads_sensor.read_moisture()
     tds = max(0 , tds)
     try:
+        
         temperature_c = dht_device.temperature
         # Alternate temperature between 31°C and 29°C for testing motor control
         
@@ -115,12 +112,10 @@ def read_live_sensor_values():
         if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
             if temperature_c > TEMP_TRIGGER and not is_forward:
                 motor1.forward(MOTOR_SPEED)
-                motor2.forward(MOTOR_SPEED)
                 print("motor forward")
                 is_forward = True
                 time.sleep(2)
                 motor1.stop()
-                motor2.stop()
                 consecutive_readings = 0  # Reset counter after action
             elif temperature_c < TEMP_TRIGGER and is_forward:
                 motor1.backward(MOTOR_SPEED)
