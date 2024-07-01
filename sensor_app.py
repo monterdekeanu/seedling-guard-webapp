@@ -27,10 +27,10 @@ IN1_PIN = 15
 IN2_PIN = 18
 EN1_PIN = 14
 
-MOTOR_SPEED = 17
+MOTOR_SPEED = 19
 
 PUMP_DURATION = 5  # Duration to run the pump in seconds
-PUMP_INTERVAL = 10  # Interval to wait before pumping again in seconds
+PUMP_INTERVAL = 30  # Interval to wait before pumping again in seconds
 
 TEMP_TRIGGER = 30
 CONSECUTIVE_READINGS_THRESHOLD = 5  # Number of consecutive readings required to trigger motors
@@ -114,17 +114,13 @@ def read_live_sensor_values():
                 motor1.forward(MOTOR_SPEED)
                 print("motor forward")
                 is_forward = True
-                time.sleep(2)
                 motor1.stop()
                 consecutive_readings = 0  # Reset counter after action
             elif temperature_c < TEMP_TRIGGER and is_forward:
                 motor1.backward(MOTOR_SPEED)
-                motor2.backward(MOTOR_SPEED)
                 is_forward = False
                 print("motor backward")
-                time.sleep(2)
                 motor1.stop()
-                motor2.stop()
                 consecutive_readings = 0  # Reset counter after action
         
             

@@ -2,12 +2,11 @@ import RPi.GPIO as GPIO
 from time import sleep
 
 class Motor:
-    def __init__(self, in1, in2, en, motor_name):
+    def __init__(self, in1, in2, en):
         self.in1 = in1
         self.in2 = in2
         self.en = en
-        self.motor_name = motor_name
-
+        self.forward_backward_time = 0.9
         GPIO.setmode(GPIO.BCM)
         GPIO.setup(self.in1, GPIO.OUT)
         GPIO.setup(self.in2, GPIO.OUT)
@@ -22,8 +21,7 @@ class Motor:
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(0.6)
-        print(f"{self.motor_name} moving forward")
+        sleep(self.forward_backward_time)
 
     def backward(self, speed=100):
         GPIO.output(self.in1, GPIO.HIGH)
@@ -31,13 +29,11 @@ class Motor:
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(0.6)
-        print(f"{self.motor_name} moving backward")
+        sleep(self.forward_backward_time)
 
     def stop(self):
         self.pwm.ChangeDutyCycle(0)
         sleep(2)
-        print(f"{self.motor_name} stopped")
 
     def cleanup(self):
         self.pwm.stop()
