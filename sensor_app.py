@@ -109,6 +109,8 @@ def read_live_sensor_values():
                 consecutive_readings += 1
     
         print(f"Consecutive readings: {consecutive_readings}")
+        
+        socketio.sleep(1)
         if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
             if temperature_c > TEMP_TRIGGER and not is_forward:
                 motor1.forward(MOTOR_SPEED)
@@ -126,6 +128,12 @@ def read_live_sensor_values():
             
         # Check if TDS is outside acceptable range to trigger the relay
         current_time = time.time()
+        socketio.emit('updateTimer', {
+            'values': {
+                'counter': round(current_time - last_pump_time, 0)
+            },
+            "date": get_current_datetime()
+        })
         if tds < 300:
             print(f"{current_time - last_pump_time} seconds has passed.")
             if current_time - last_pump_time > PUMP_INTERVAL:

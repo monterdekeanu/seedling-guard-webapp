@@ -3,7 +3,9 @@ $(document).ready(function () {
   const ctxDHT11 = document.getElementById("DHT11Chart").getContext("2d");
   const txtTemperature = document.getElementById("txtTemperature");
   const txtWaterSalinity = document.getElementById("txtWaterSalinity");
+  const txtWaterSalinityMotor = document.getElementById("txtWaterSalinityMotor");
   const txtSoilMoisture = document.getElementById("txtSoilMoisture");
+  const txtSoilMoistureMotor = document.getElementById("txtSoilMoistureMotor");
   const txtDHT11Status = document.getElementById("txtDHT11Status");
   const txtTDSStatus = document.getElementById("txtTDSStatus");
   const txtSoilMoistureStatus = document.getElementById("txtSoilMoistureStatus");
@@ -90,6 +92,14 @@ $(document).ready(function () {
 
   const MAX_DATA_COUNT = 10;
   const socket = io.connect();
+  
+  var soilCounter = 0;
+  
+  socket.on("updateTimer", function(msg){
+    
+    soilCounter = 30 - msg.values.counter;
+    
+    })
 
   socket.on("updateSensorData", function (msg) {
     console.log("Received sensorData :: " + msg.date + " :: " + msg.values);
@@ -115,22 +125,37 @@ $(document).ready(function () {
     if(msg.values.salinity < 300){
         txtTDSStatus.innerText = "Low Salinity";
         txtTDSStatus.style.color = "red";
+        txtWaterSalinityMotor.innerText = "Pumping Fertilizer in " + soilCounter + " s";
+        if(soilCounter <= 0){
+            txtWaterSalinityMotor.innerText = "Pumping Fertilizer Now...";
+          }
+        
+        txtWaterSalinityMotor.style.color = "green";
     }else if(msg.values.salinity >= 300 && msg.values.salinity <= 800){
         txtTDSStatus.innerText = "Moderate Salinity";
+        txtWaterSalinityMotor.style.color = "black";
         txtTDSStatus.style.color = "green";
     }else{
         txtTDSStatus.innerText = "High Salinity";
         txtTDSStatus.style.color = "red";
+        txtWaterSalinityMotor.innerText = "Pumping Water in " + soilCounter + " s";
+        if(soilCounter <= 0){
+            txtWaterSalinityMotor.innerText = "Pumping Water Now...";
+          }
+        txtWaterSalinityMotor.style.color = "blue";
     }
     if(msg.values.moisture < 5){
         txtSoilMoistureStatus.innerText = "Dry";
         txtSoilMoistureStatus.style.color = "red";
+        txtSoilMoistureMotor.innerText = "Water Pump: Enabled";
     }else if(msg.values.salinity >= 5 && msg.values.salinity <= 5.7){
         txtSoilMoistureStatus.innerText = "Moist";
         txtSoilMoistureStatus.style.color = "green";
+        txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
     }else{
         txtSoilMoistureStatus.innerText = "Wet";
         txtSoilMoistureStatus.style.color = "green";
+        txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
     }
     txtTemperature.innerText = msg.values.temperature + " °C";
     addData(TDSMeterChart, msg.date, [msg.values.salinity]);
