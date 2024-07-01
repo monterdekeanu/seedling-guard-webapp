@@ -126,16 +126,24 @@ def read_live_sensor_values():
             
         # Check if TDS is outside acceptable range to trigger the relay
         current_time = time.time()
-        if tds < 300 or tds > 800:
+        if tds < 300:
             print(f"{current_time - last_pump_time} seconds has passed.")
             if current_time - last_pump_time > PUMP_INTERVAL:
-                print("Activating fertilizer pump due to TDS level")
+                print("Activating fertilizer pump due to low TDS level")
                 relay1.activate() # Turn on the pump
                 time.sleep(PUMP_DURATION)
                 relay1.deactivate()  # Turn off the pump
                 last_pump_time = current_time
                 print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
-                
+        elif tds > 800:
+            print(f"{current_time - last_pump_time} seconds has passed.")
+            if current_time - last_pump_time > PUMP_INTERVAL:
+                print("Activating water pump due to high TDS level")
+                relay2.activate() # Turn on the pump
+                time.sleep(PUMP_DURATION)
+                relay2.deactivate()  # Turn off the pump
+                last_pump_time = current_time
+                print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
         else: 
             relay1.deactivate()
         
