@@ -135,6 +135,7 @@ $(document).ready(function () {
         txtTDSStatus.innerText = "Moderate Salinity";
         txtWaterSalinityMotor.style.color = "black";
         txtTDSStatus.style.color = "green";
+        txtWaterSalinityMotor.innerText = " ";
     }else{
         txtTDSStatus.innerText = "High Salinity";
         txtTDSStatus.style.color = "red";
@@ -148,14 +149,18 @@ $(document).ready(function () {
         txtSoilMoistureStatus.innerText = "Dry";
         txtSoilMoistureStatus.style.color = "red";
         txtSoilMoistureMotor.innerText = "Water Pump: Enabled";
+        txtSoilMoistureMotor.style.color = "blue";
+        
     }else if(msg.values.salinity >= 5 && msg.values.salinity <= 5.7){
         txtSoilMoistureStatus.innerText = "Moist";
         txtSoilMoistureStatus.style.color = "green";
         txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
+        txtSoilMoistureMotor.style.color = "grey";
     }else{
         txtSoilMoistureStatus.innerText = "Wet";
         txtSoilMoistureStatus.style.color = "green";
         txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
+        txtSoilMoistureMotor.style.color = "grey";
     }
     txtTemperature.innerText = msg.values.temperature + " °C";
     addData(TDSMeterChart, msg.date, [msg.values.salinity]);

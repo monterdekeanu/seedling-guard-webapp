@@ -1,7 +1,7 @@
 from flask import Flask, render_template
 from flask_socketio import SocketIO
 from threading import Lock
-from datetime import datetime
+from datetime import datetime, timedelta
 from random import uniform
 import time
 import os
@@ -35,6 +35,7 @@ PUMP_INTERVAL = 30  # Interval to wait before pumping again in seconds
 TEMP_TRIGGER = 30
 CONSECUTIVE_READINGS_THRESHOLD = 5  # Number of consecutive readings required to trigger motors
 
+
 # Global variables to store sensor data
 temperature_c = 0
 tds = 0
@@ -65,6 +66,8 @@ def get_current_datetime():
     #return now.strftime("%m/%d/%Y %H:%M:%S")
     return now.strftime("%H:%M:%S")
 
+INIT_RUN = datetime.now() + timedelta(seconds=20)
+
 # This function modifies global variables, so we use the `global` keyword to refer to them.
 def generate_random_sensor_values():
     global temperature_c, tds, soil_moisture
@@ -75,14 +78,23 @@ def generate_random_sensor_values():
 
 # This function modifies global variables, so we use the `global` keyword to refer to them.
 def read_live_sensor_values():
-    global temperature_c, tds, soil_moisture, is_forward, last_pump_time, toggle_temp_flag, consecutive_readings
-    print("Generating live sensor values")
+    global temperature_c, tds, soil_moisture, is_forward, last_pump_time, toggle_temp_flag, consecutive_readings, INIT_RUN
+    runtime = datetime.now() + timedelta(seconds=0)
     
     tds = ads_sensor.read_salinity()
     soil_moisture = ads_sensor.read_moisture()
     tds = max(0 , tds)
+    temperature_c = dht_device.temperature
+    
+    
+    print("Generating live sensor values")
+    
+    
+    
+   
+    
     try:
-        
+                
         temperature_c = dht_device.temperature
         # Alternate temperature between 31°C and 29°C for testing motor control
         
@@ -107,10 +119,17 @@ def read_live_sensor_values():
                 consecutive_readings = 0  # Reset counter if already in backward state
             else:
                 consecutive_readings += 1
-    
+        socketio.emit('updateSensorData', {
+            'values': {
+                'temperature': round(temperature_c, 2),
+                'salinity': round(tds, 2),
+                'moisture': round(soil_moisture, 2)
+            },
+            "date": get_current_datetime()
+        })
         print(f"Consecutive readings: {consecutive_readings}")
-        
-        socketio.sleep(1)
+        if runtime < INIT_RUN:
+            return
         if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
             if temperature_c > TEMP_TRIGGER and not is_forward:
                 motor1.forward(MOTOR_SPEED)
@@ -184,15 +203,8 @@ def background_thread():
             countdown_time -= 1
         formatted_countdown = format_elapsed_time(countdown_time)
         
-        socketio.emit('updateSensorData', {
-            'values': {
-                'temperature': round(temperature_c, 2),
-                'salinity': round(tds, 2),
-                'moisture': round(soil_moisture, 2)
-            },
-            "date": get_current_datetime()
-        })
-        socketio.sleep(1)
+        
+        socketio.sleep(0.5)
 
 def cleanup():
     print("Cleaning up GPIOs and motors...")
