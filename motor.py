@@ -21,7 +21,7 @@ class Motor:
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(self.forward_backward_time)
+        sleep(1.28)
 
     def backward(self, speed=100):
         GPIO.output(self.in1, GPIO.HIGH)
@@ -29,7 +29,7 @@ class Motor:
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(self.forward_backward_time)
+        sleep(1.27)
 
     def stop(self):
         self.pwm.ChangeDutyCycle(0)

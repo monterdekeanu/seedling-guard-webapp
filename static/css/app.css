@@ -11,17 +11,24 @@
     text-align: center;
 }
 
+span {
+    font-size: 10px;
+}
 
-.chart-container {
+.chart-container, .section-1 {
 	display: flex;
 	flex-wrap: wrap;
 	max-width: 90vw;
 	margin: 0 auto;
 }
 
+h3{
+    margin: 0px 2px;
+}
+
 .sensor-chart {
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    justify-content: none;
     width: 400px;
 }

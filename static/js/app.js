@@ -8,7 +8,15 @@ $(document).ready(function () {
   const txtSoilMoistureMotor = document.getElementById("txtSoilMoistureMotor");
   const txtDHT11Status = document.getElementById("txtDHT11Status");
   const txtTDSStatus = document.getElementById("txtTDSStatus");
+  const txtWaterMotor = document.getElementById("txtWaterMotor");
+  const txtFertilizerMotor = document.getElementById("txtFertilizerMotor");
+  const txtBlindMotor = document.getElementById("txtBlindMotor");
   const txtSoilMoistureStatus = document.getElementById("txtSoilMoistureStatus");
+  const txtOverallStatus = document.getElementById("txtOverallStatus");
+  const txtOverallDescription = document.getElementById("txtOverallDescription");
+  let soilStatus = 0;
+  let tempStatus = 0;
+  let salinityStatus = 0;
   const DHT11Chart = new Chart(ctxDHT11, {
     type: "line",
     data: {
@@ -115,51 +123,85 @@ $(document).ready(function () {
     }
 
     addData(DHT11Chart, msg.date, [ msg.values.temperature]);
-    if(msg.values.temperature > 30){
-      txtDHT11Status.innerText = "Close Blinds"
+    if(msg.values.temperature == 0){
+      tempStatus = -1;
+      txtDHT11Status.innerText = "Sensor not found"
       txtDHT11Status.style.color = "red";
+    }else if(msg.values.temperature > 30){
+      txtDHT11Status.innerText = "Critical"
+      tempStatus = 3;
+      txtDHT11Status.style.color = "red";
+      txtBlindMotor.innerText = "Blinds: Close";
+    }else if(msg.values.temperature <20){
+      txtDHT11Status.innerText = "Cooling"
+      tempStatus = 1;
+      txtDHT11Status.style.color = "blue";
+      txtBlindMotor.innerText = "Blinds: Open";
     }else{
-      txtDHT11Status.innerText = "Open Blinds"
+      tempStatus = 2;
+      txtDHT11Status.innerText = "Normal"
       txtDHT11Status.style.color = "green";
+      txtBlindMotor.innerText = "Blinds: Open";
     }
     if(msg.values.salinity < 300){
+        salinityStatus = 1;
         txtTDSStatus.innerText = "Low Salinity";
         txtTDSStatus.style.color = "red";
         txtWaterSalinityMotor.innerText = "Pumping Fertilizer in " + soilCounter + " s";
         if(soilCounter <= 0){
             txtWaterSalinityMotor.innerText = "Pumping Fertilizer Now...";
+            txtFertilizerMotor.innerText = "Fertilizer Motor: Enabled";
+            txtFertilizerMotor.style.color = "green";
+          }else{
+            txtFertilizerMotor.innerText = "Fertilizer Motor: Disabled";
+            txtFertilizerMotor.style.color = "grey";
           }
         
         txtWaterSalinityMotor.style.color = "green";
     }else if(msg.values.salinity >= 300 && msg.values.salinity <= 800){
+        salinityStatus = 2;
         txtTDSStatus.innerText = "Moderate Salinity";
         txtWaterSalinityMotor.style.color = "black";
         txtTDSStatus.style.color = "green";
         txtWaterSalinityMotor.innerText = " ";
     }else{
+        salinityStatus = 3;
         txtTDSStatus.innerText = "High Salinity";
         txtTDSStatus.style.color = "red";
-        txtWaterSalinityMotor.innerText = "Pumping Water in " + soilCounter + " s";
-        if(soilCounter <= 0){
-            txtWaterSalinityMotor.innerText = "Pumping Water Now...";
-          }
-        txtWaterSalinityMotor.style.color = "blue";
+        //txtWaterSalinityMotor.innerText = "Pumping Water in " + soilCounter + " s";
+        txtWaterSalinityMotor.innerText = " ";
+        //if(soilCounter <= 0){
+        //    txtWaterSalinityMotor.innerText = "Pumping water Now...";
+        //    txtWaterMotor.innerText = "Water Pump: Enabled";
+        //  }else {
+        //    txtWaterMotor.innerText = "Water Pump: Disabled";
+        //    }
+        //txtWaterSalinityMotor.style.color = "blue";
     }
     if(msg.values.moisture < 5){
+        soilStatus = 1;
         txtSoilMoistureStatus.innerText = "Dry";
         txtSoilMoistureStatus.style.color = "red";
-        txtSoilMoistureMotor.innerText = "Water Pump: Enabled";
+        txtSoilMoistureMotor.innerText = "Dispensing Water";
+        txtWaterMotor.innerText = "Water Pump: Enabled";
+        txtWaterMotor.style.color = "blue";
         txtSoilMoistureMotor.style.color = "blue";
         
     }else if(msg.values.salinity >= 5 && msg.values.salinity <= 5.7){
+        soilStatus = 2;
         txtSoilMoistureStatus.innerText = "Moist";
         txtSoilMoistureStatus.style.color = "green";
-        txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
+        txtSoilMoistureMotor.innerText = " ";
+        txtWaterMotor.innerText = "Water Pump: Disabled";
+        txtWaterMotor.style.color = "grey";
         txtSoilMoistureMotor.style.color = "grey";
     }else{
+        soilStatus = 3;
         txtSoilMoistureStatus.innerText = "Wet";
         txtSoilMoistureStatus.style.color = "green";
-        txtSoilMoistureMotor.innerText = "Water Pump: Disabled";
+        txtSoilMoistureMotor.innerText = " ";
+        txtWaterMotor.innerText = "Water Pump: Disabled";
+        txtWaterMotor.style.color = "grey";
         txtSoilMoistureMotor.style.color = "grey";
     }
     txtTemperature.innerText = msg.values.temperature + " °C";
@@ -167,5 +209,16 @@ $(document).ready(function () {
     txtWaterSalinity.innerText = msg.values.salinity + " ppm";
     addData(SoilMoistureChart, msg.date, [msg.values.moisture]);
     txtSoilMoisture.innerText = msg.values.moisture + "mL";
+    var overallStatus = soilStatus + salinityStatus + tempStatus;
+    if(overallStatus <= 4){
+      txtOverallStatus.innerText = "Suboptimal";
+      txtOverallDescription.innerText = "Seedlings categorized as Suboptimal are experiencing conditions less conducive to optimal growth, including extremes in temperature, inadequate soil moisture, or high levels of soil salinity. While they may still survive and grow to some extent, their overall";
+    }else if(overallStatus == 5){
+      txtOverallStatus.innerText = "Normal";
+      txtOverallDescription.innerText = "Seedlings classified as Normal are in good condition, displaying satisfactory growth and development, and seedlings growing under ideal conditions in one or more environmental factors, such as normal temperature, moist soil, and moderate salinity.";
+      }else{
+        txtOverallStatus.innerText = "Optimal";
+        txtOverallDescription.innerText = "In the Optimal category, seedlings thrive under low conditions, which require moderate temperatures, adequate soil moisture, and low to moderate soil salinity.";
+        }
   });
 });

@@ -26,6 +26,29 @@
     <div class="container">
       <div class="hero">
         <h1>Real Time Sensor Display</h1>
+        <div class="section-1">
+          <div class="overall-container sensor-chart">
+            <h2>Overall Status</h2>
+            <div>
+              <h3 id="txtOverallStatus">Undefined</h3>
+              <span id="txtOverallDescription">Undefined</span>
+            </div>
+            
+          </div>
+          <div class="sensor-chart">
+            <h2>Activity</h2>
+            <div>
+              <h3 id="txtWaterSalinityMotor">xx</h3>
+              <h3 id="txtSoilMoistureMotor">xx</h3>
+            </div>
+          </div>
+          <div class="motor-container class="sensor-chart">
+            <h2>Motor Status</h2>
+            <h3 id="txtBlindMotor">Blinds: Open</h3>
+            <h3 id="txtWaterMotor">Water Pump: Disabled</h2>
+            <h3 id="txtFertilizerMotor">Fertilizer Pump: Disabled</h2>
+          </div>
+        </div>
         <div class="chart-container">
             <div class="sensor-chart">
                 <div>
@@ -45,7 +68,7 @@
                   <div class="sensor-reading">
                       <h3>Water Salinity: </h3>
                       <h3 id="txtWaterSalinity">xx</h3>
-                      <h3 id="txtWaterSalinityMotor">xx</h3>
+                      
                   </div>
                 </div>
                 <canvas id="TDSMeterChart" width="300" height="200"></canvas>
@@ -57,7 +80,7 @@
                   <div class="sensor-reading">
                       <h3>Soil Moisture: </h3>
                       <h3 id="txtSoilMoisture">xx</h3>
-                      <h3 id="txtSoilMoistureMotor">xx</h3>
+                      
                       
                   </div>
                 </div>
