@@ -35,6 +35,7 @@
             </div>
             
           </div>
+          
           <div class="sensor-chart">
             <h2>Activity</h2>
             <div>
@@ -49,6 +50,7 @@
             <h3 id="txtFertilizerMotor">Fertilizer Pump: Disabled</h2>
           </div>
         </div>
+        <h2>Right Sensor</h2>
         <div class="chart-container">
             <div class="sensor-chart">
                 <div>
@@ -85,6 +87,47 @@
                   </div>
                 </div>
                 <canvas id="SoilMoistureChart" width="300" height="200"></canvas>
+            </div>
+        </div>
+      </div>
+      <h2>Left Container</h2>
+      <div class="chart-container">
+            <div class="sensor-chart">
+                <div>
+                  <h2>DHT11 Sensor</h2>
+                  <h2 id="txtDHT11Status2">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Temperature: </h3>
+                      <h3 id="txtTemperature2">xx</h3>
+                  </div>
+                </div>
+                <canvas id="DHT11Chart2" width="300" height="200"></canvas>
+            </div>
+            
+            <div class="sensor-chart">
+                <div>
+                  <h2>TDS Sensor</h2>
+                  <h2 id="txtTDSStatus2">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Water Salinity: </h3>
+                      <h3 id="txtWaterSalinity2">xx</h3>
+                      
+                  </div>
+                </div>
+                <canvas id="TDSMeterChart2" width="300" height="200"></canvas>
+            </div>
+            <div class="sensor-chart">
+                <div>
+                  <h2>Soil Moisture Sensor</h2>
+                  <h2 id="txtSoilMoistureStatus2">Status</h2>
+                  <div class="sensor-reading">
+                      <h3>Soil Moisture: </h3>
+                      <h3 id="txtSoilMoisture2">xx</h3>
+                      
+                      
+                  </div>
+                </div>
+                <canvas id="SoilMoistureChart2" width="300" height="200"></canvas>
             </div>
         </div>
       </div>

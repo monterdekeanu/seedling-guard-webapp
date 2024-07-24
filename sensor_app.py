@@ -7,6 +7,7 @@ import time
 import os
 import adafruit_dht
 import board
+import psycopg2
 from ads1115 import ADSConverter
 from motor import Motor
 from relay import Relay
@@ -14,6 +15,34 @@ from relay import Relay
 """
 Background Thread
 """
+# Database configuration
+DB_NAME = "sensor_data"
+DB_USER = "sensor_user"
+DB_PASS = "123"
+DB_HOST = "localhost"
+
+# Create a connection to the PostgreSQL database
+def create_db_connection():
+    return psycopg2.connect(
+        dbname=DB_NAME,
+        user=DB_USER,
+        password=DB_PASS,
+        host=DB_HOST
+    )
+
+# Function to insert sensor data into the database
+def insert_sensor_data(timestamp, temperature, tds, soil_moisture):
+    conn = create_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO sensor_readings (timestamp, temperature, tds, soil_moisture) VALUES (%s, %s, %s, %s)",
+        (timestamp, temperature, tds, soil_moisture)
+    )
+    print("INSERTING DATA TO DATABASE")
+    conn.commit()
+    cur.close()
+    conn.close()
+
 
 mode = None
 thread = None
@@ -26,6 +55,10 @@ RELAY_2_PIN = 27
 EN1_PIN = 14
 IN1_PIN = 15
 IN2_PIN = 18
+EN2_PIN = 11
+IN3_PIN = 10
+IN4_PIN = 9
+
 
 MOTOR_SPEED = 20
 
@@ -37,23 +70,32 @@ CONSECUTIVE_READINGS_THRESHOLD = 5  # Number of consecutive readings required to
 
 # Global variables to store sensor data
 temperature_c = 0.0
+temperature_c_2 = 0.0
 tds = 0
 soil_moisture = 0
 is_forward = False
+is_forward_c2 = False
 last_pump_time = 0
 countdown_time = 0
 toggle_temp_flag = True  # Flag to alternate temperature
 consecutive_readings = 0
+consecutive_readings_c2 = 0
 
 # Sensors and Motor
 try:
     dht_device = adafruit_dht.DHT11(board.D4)
 except RuntimeError as e:
     dht_device = None
-    print("Failed to initialize DHT11 sensor:", e)
-
+    print("Failed to initialize right container DHT11 sensor:", e)
+try:
+    dht_device_c2 = adafruit_dht.DHT11(board.D22)
+except RuntimeError as e:
+    dht_device_c2 = None
+    print("Failed to initialize left container DHT11 sensor:", e)
+    
 ads_sensor = ADSConverter()
 motor1 = Motor(IN1_PIN, IN2_PIN, EN1_PIN)
+motor2 = Motor(IN3_PIN, IN4_PIN, EN2_PIN)
 relay1 = Relay(RELAY_1_PIN)
 relay2 = Relay(RELAY_2_PIN)
 
@@ -81,12 +123,16 @@ def generate_random_sensor_values():
 
 # This function modifies global variables, so we use the `global` keyword to refer to them.
 def read_live_sensor_values():
-    global temperature_c, tds, soil_moisture, is_forward, last_pump_time, toggle_temp_flag, consecutive_readings, INIT_RUN
+    global temperature_c, tds, tds_c2, soil_moisture, soil_moisture_c2, is_forward, last_pump_time, toggle_temp_flag, consecutive_readings, INIT_RUN
+    global temperature_c2, is_forward_c2, consecutive_readings_c2
     runtime = datetime.now() + timedelta(seconds=0)
 
     tds = ads_sensor.read_salinity()
+    tds_c2= ads_sensor.read_salinity_c2()
     soil_moisture = ads_sensor.read_moisture()
+    soil_moisture_c2 = ads_sensor.read_moisture_c2()
     tds = max(0, tds)
+    tds_c2 = max(0, tds_c2)
 
     try:
         if dht_device:
@@ -97,7 +143,18 @@ def read_live_sensor_values():
             temperature_c = 0.0
     except RuntimeError as err:
         temperature_c = 0.0
-        print("DHT11 reading error:", err)
+        print("DHT11 reading error (right container):", err)
+
+    try:
+        if dht_device_c2:
+            temperature_c2 = dht_device_c2.temperature
+            if temperature_c2 is None:
+                temperature_c2 = 0.0
+        else:
+            temperature_c2 = 0.0
+    except RuntimeError as err:
+        temperature_c2 = 0.0
+        print("DHT11 reading error (left container):", err)
 
     print("Generating live sensor values")
 
@@ -112,16 +169,33 @@ def read_live_sensor_values():
             consecutive_readings = 0  # Reset counter if already in backward state
         else:
             consecutive_readings += 1
-
+    
+    if temperature_c2 > TEMP_TRIGGER:
+        if is_forward_c2:
+            consecutive_readings_c2 = 0  # Reset counter if already in forward state
+        else:
+            consecutive_readings_c2 += 1
+    else:
+        if not is_forward_c2:
+            consecutive_readings_c2 = 0  # Reset counter if already in backward state
+        else:
+            consecutive_readings_c2 += 1
+            
     socketio.emit('updateSensorData', {
         'values': {
             'temperature': round(temperature_c, 2),
+            'temperature_c2': round(temperature_c2, 2),
             'salinity': round(tds, 2),
-            'moisture': round(soil_moisture, 2)
+            'salinity_c2': round(tds_c2, 2),
+            'moisture': round(soil_moisture, 2),
+            'moisture_c2': round(soil_moisture_c2, 2)
         },
         "date": get_current_datetime()
     })
+    
     print(f"Consecutive readings: {consecutive_readings}")
+    print(f"Consecutive readings c2: {consecutive_readings}")
+    print()
     if runtime < INIT_RUN:
         return
     if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
@@ -137,6 +211,20 @@ def read_live_sensor_values():
             print("motor backward")
             motor1.stop()
             consecutive_readings = 0  # Reset counter after action
+    
+    if consecutive_readings_c2 >= CONSECUTIVE_READINGS_THRESHOLD:
+        if temperature_c2 > TEMP_TRIGGER and not is_forward_c2:
+            motor2.backward(MOTOR_SPEED)
+            print("motor forward")
+            is_forward_c2 = True
+            motor2.stop()
+            consecutive_readings_c2 = 0  # Reset counter after action
+        elif temperature_c2 < TEMP_TRIGGER and is_forward_c2:
+            motor2.forward(MOTOR_SPEED)
+            is_forward_c2 = False
+            print("motor backward")
+            motor2.stop()
+            consecutive_readings_c2 = 0  # Reset counter after action
 
     # Check if TDS is outside acceptable range to trigger the relay
     current_time = time.time()
@@ -155,15 +243,6 @@ def read_live_sensor_values():
             relay1.deactivate()  # Turn off the pump
             last_pump_time = current_time
             print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
-    # elif tds > 800:
-        # print(f"{current_time - last_pump_time} seconds has passed.")
-        # if current_time - last_pump_time > PUMP_INTERVAL:
-            # print("Activating water pump due to high TDS level")
-            # relay2.activate()  # Turn on the pump
-            # time.sleep(PUMP_DURATION)
-            # relay2.deactivate()  # Turn off the pump
-            # last_pump_time = current_time
-            # print(f"Pump activated at {get_current_datetime()}. Next check in {format_elapsed_time(PUMP_INTERVAL)} minutes.")
     else:
         relay1.deactivate()
 
@@ -176,6 +255,7 @@ def read_live_sensor_values():
     # Check if relay is triggered and soil moisture becomes moist again
     else:
         relay2.deactivate()
+    
 
 def format_elapsed_time(seconds):
     minutes = seconds // 60
@@ -204,7 +284,6 @@ def cleanup():
     relay1.cleanup()
     relay2.cleanup()
     motor1.stop()  # Stop the motor
-    motor2.stop()  # Stop the motor
     GPIO.cleanup()  # Cleanup GPIO pins
 
 """
