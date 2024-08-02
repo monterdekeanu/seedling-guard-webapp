@@ -6,7 +6,10 @@ from adafruit_ads1x15.analog_in import AnalogIn
 class ADSConverter:
     V_dry = 2.23  # Voltage at dry soil
     V_wet = 1.03  # Voltage at saturated soil
-
+    
+    V_dry2 = 3.95  # Voltage at dry soil
+    V_wet2 = 2.38 # Voltage at saturated soil
+    
     # Constants for the TDS calculation
     VREF = 3.3  # Reference voltage
     TDS_FACTOR = 0.5  # TDS factor (depends on your sensor and calibration)
@@ -27,14 +30,20 @@ class ADSConverter:
         moisture = 100 * (self.V_dry - voltage) / (self.V_dry - self.V_wet)
         return moisture / 10
     
+    def convert_to_moisture_c2(self, voltage):
+        moisture = 100 * (self.V_dry2 - voltage) / (self.V_dry2 - self.V_wet2)
+        moisture = moisture / 10
+        return moisture if moisture < 10 else 10
+    
     def read_moisture(self):
         voltage = self.soil_moisture_sensor.voltage
         return self.convert_to_moisture(voltage)
     
     def read_moisture_c2(self):
         voltage = self.soil_moisture_sensor_c2.voltage
-        return self.convert_to_moisture(voltage)
-
+        return self.convert_to_moisture_c2(voltage)
+        #return voltage
+        
     def read_salinity(self):
         voltage = self.salinity_sensor.voltage
         # Convert voltage to TDS value

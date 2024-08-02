@@ -60,8 +60,9 @@ IN3_PIN = 10
 IN4_PIN = 9
 
 
-MOTOR_SPEED = 20
-
+MOTOR_SPEED = 15
+FORWARD_TIME = 1.8
+BACKWARD_TIME = 1.5
 PUMP_DURATION = 5  # Duration to run the pump in seconds
 PUMP_INTERVAL = 30  # Interval to wait before pumping again in seconds
 
@@ -73,6 +74,7 @@ temperature_c = 0.0
 temperature_c_2 = 0.0
 tds = 0
 soil_moisture = 0
+soil_moisture_c2 = 0
 is_forward = False
 is_forward_c2 = False
 last_pump_time = 0
@@ -194,36 +196,36 @@ def read_live_sensor_values():
     })
     
     print(f"Consecutive readings: {consecutive_readings}")
-    print(f"Consecutive readings c2: {consecutive_readings}")
+    print(f"Consecutive readings c2: {consecutive_readings_c2}")
     print()
     if runtime < INIT_RUN:
         return
     if consecutive_readings >= CONSECUTIVE_READINGS_THRESHOLD:
         if temperature_c > TEMP_TRIGGER and not is_forward:
-            motor1.backward(MOTOR_SPEED)
+            motor2.forward(MOTOR_SPEED)
             print("motor forward")
             is_forward = True
-            motor1.stop()
+            motor2.stop()
             consecutive_readings = 0  # Reset counter after action
         elif temperature_c < TEMP_TRIGGER and is_forward:
-            motor1.forward(MOTOR_SPEED)
+            motor2.backward(MOTOR_SPEED)
             is_forward = False
             print("motor backward")
-            motor1.stop()
+            motor2.stop()
             consecutive_readings = 0  # Reset counter after action
     
     if consecutive_readings_c2 >= CONSECUTIVE_READINGS_THRESHOLD:
         if temperature_c2 > TEMP_TRIGGER and not is_forward_c2:
-            motor2.backward(MOTOR_SPEED)
+            motor1.forward(MOTOR_SPEED, FORWARD_TIME)
             print("motor forward")
             is_forward_c2 = True
-            motor2.stop()
+            motor1.stop()
             consecutive_readings_c2 = 0  # Reset counter after action
         elif temperature_c2 < TEMP_TRIGGER and is_forward_c2:
-            motor2.forward(MOTOR_SPEED)
+            motor1.backward(MOTOR_SPEED, BACKWARD_TIME)
             is_forward_c2 = False
             print("motor backward")
-            motor2.stop()
+            motor1.stop()
             consecutive_readings_c2 = 0  # Reset counter after action
 
     # Check if TDS is outside acceptable range to trigger the relay
@@ -234,7 +236,7 @@ def read_live_sensor_values():
         },
         "date": get_current_datetime()
     })
-    if tds < 300:
+    if (tds+tds_c2)/2 < 300:
         print(f"{current_time - last_pump_time} seconds has passed.")
         if current_time - last_pump_time > PUMP_INTERVAL:
             print("Activating fertilizer pump due to low TDS level")
@@ -247,9 +249,9 @@ def read_live_sensor_values():
         relay1.deactivate()
 
     # Check if soil moisture is below a threshold to trigger the relay
-    if soil_moisture < 5:
+    if (soil_moisture + soil_moisture_c2)/2 < 5:
         relay2.activate()
-        time.sleep(1)
+        time.sleep(2)
         relay2.deactivate()
         time.sleep(1)
     # Check if relay is triggered and soil moisture becomes moist again

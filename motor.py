@@ -15,21 +15,21 @@ class Motor:
         self.pwm = GPIO.PWM(self.en, 1000)  # Create PWM instance with frequency
         self.pwm.start(0)  # Start PWM with 0% duty cycle (motor stopped)
             
-    def forward(self, speed=100):
+    def forward(self, speed=100, time=1.9):
         GPIO.output(self.in1, GPIO.LOW)    
         GPIO.output(self.in2, GPIO.HIGH)
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(1.28)
+        sleep(time)
 
-    def backward(self, speed=100):
+    def backward(self, speed=100, time=1):
         GPIO.output(self.in1, GPIO.HIGH)
         GPIO.output(self.in2, GPIO.LOW)
         self.pwm.ChangeDutyCycle(30)
         sleep(0.1)
         self.pwm.ChangeDutyCycle(speed)
-        sleep(1.27)
+        sleep(time)
 
     def stop(self):
         self.pwm.ChangeDutyCycle(0)
